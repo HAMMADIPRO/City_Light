@@ -1,0 +1,119 @@
+# importer les paquets nécessaires
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import picamera.array
+import numpy as np
+import time
+import cv2
+import RPi.GPIO as GPIO
+import time
+#configuration des modes des ports GPIO
+GPIO.setmode(GPIO.BCM)
+#définition les port 23,25,16,21 comme étant des sorties 
+for i in (23, 25, 16, 21):
+    GPIO.setup(i, GPIO.OUT)
+#établissement de la connexion et de la résolution 
+## initialise la caméra et saisit une référence à la capture de la caméra brute
+cam = PiCamera()
+cam.resolution=(480,480)
+cam.framerate=30
+raw=PiRGBArray(cam, size=(480,480))
+
+time.sleep(0.1)
+
+colorLower = np.array([0,100,100])
+colorUpper = np.array([179,255,255])
+
+initvert = 0
+inithoriz = 0
+counter = 0
+#capture des images de la caméra
+for frame in cam.capture_continuous(raw, format="bgr", use_video_port=True):
+    frame = frame.array
+# convertir des images d'un espace couleur  BGR ? HSV 
+    hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    #afféctation de couleur obtenu colorLower
+    mask = cv2.inRange(hsv,colorLower,colorUpper)
+#Brouiller les images avec divers filtres passe-bas
+    mask = cv2.blur(mask,(3,3))
+#pour la dilatation de l'image 
+    mask= cv2.dilate(mask,None,iterations=5)
+#Érosion L'idée de base de l'érosion est  érode les limites de l'objet au premier plan .
+    mask= cv2.erode(mask,None,iterations=1)
+#pour la dilatation de l'image 
+    mask= cv2.dilate(mask,None,iterations=3)
+# le seuillage binaire noir et blanc 
+    me,thresh = cv2.threshold(mask,127,255,cv2.THRESH_BINARY)
+#on cherche les contours
+#le premier est l'image source,
+#le second est le mode de récupération de contour,
+#le troisième est la méthode d'approximation de contour.
+# Et il produit une image modifiée, 
+#les contours et la hiérarchie. contours est une liste Python de tous les contours de l'image.
+# Chaque contour individuel est un tableau Numpy de coordonnées (x, y) des points limites de l'objet.
+    cnts = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)[-2]
+    center = None
+
+    vert = 0
+    horiz = 0 
+    
+    if len(cnts) > 0:
+        for c in cnts:
+            (x,y),radius = cv2.minEnclosingCircle(c)
+            center = (int(x),int(y))
+            radius = int(radius)
+            cv2.circle(frame,center,radius,(0,255,0),2)
+
+            x = int(x)
+            y = int(y)
+            
+            if 180 < x < 300:
+                if y > 300:
+                    vert = vert +1
+                elif y < 180:
+                    vert = vert +1
+                else:
+                    vert = vert
+            if 180 < y < 300:
+                if x > 300:
+                    horiz = horiz +1
+                elif x < 180:
+                    horiz = horiz +1
+                else:
+                    horiz = horiz
+            if vert != initvert:
+                print"Cars in vertical lane: " + str(vert)
+                initvert = vert
+                print"Cars in horizontal lane: " + str(horiz)
+                inithoriz = horiz
+                print '----------------------------'
+
+            if horiz != inithoriz:
+                print"Cars in vertical lane: " + str(vert)
+                initvert = vert
+                print"Cars in horizontal lane: " + str(horiz)
+                inithoriz = horiz
+                print '----------------------------'
+            
+        if vert < horiz:
+            GPIO.output(23,GPIO.HIGH)
+            GPIO.output(21,GPIO.HIGH)
+            GPIO.output(16,GPIO.LOW)
+            GPIO.output(25,GPIO.LOW)
+        if horiz < vert:
+            GPIO.output(16,GPIO.HIGH)
+            GPIO.output(25,GPIO.HIGH)
+            GPIO.output(23,GPIO.LOW)
+            GPIO.output(21,GPIO.LOW)
+
+    #pour l'affichage de image en temps réel en trois modes 
+    cv2.imshow("Frame",frame)
+    cv2.imshow("HSV",hsv)
+    cv2.imshow("Thresh",thresh)
+               
+    raw.truncate(0)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cv2.destroyAllWindows()
+GPIO.cleanup()

@@ -1,0 +1,15 @@
+<ion-header>
+  <ion-navbar>
+    <ion-title>
+      Locate
+      <!--<img src="assets/icon/traffic-light.png" alt="">-->
+    </ion-title>
+    <ion-buttons end>
+      <button ion-button (click)="this.loadMap()"><ion-icon name="refresh"></ion-icon>&nbsp;Reload</button>
+    </ion-buttons>
+  </ion-navbar>
+</ion-header>
+
+<ion-content>
+  <div #map id="map"></div>
+</ion-content>

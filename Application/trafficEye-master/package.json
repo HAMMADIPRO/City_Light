@@ -1,0 +1,26 @@
+{
+  "name": "trafficeye",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Saad Regal",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.4",
+    "crypto": "^1.0.1",
+    "express": "^4.16.2",
+    "formidable": "^1.1.1",
+    "fs": "0.0.1-security",
+    "jsonwebtoken": "7.4.1",
+    "mongoose": "5.0.1",
+    "multer": "^1.3.0",
+    "passport": "0.3.2",
+    "passport-jwt": "2.2.1",
+    "path": "^0.12.7",
+    "socket.io": "^2.1.0"
+  }
+}
